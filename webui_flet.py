@@ -1,11 +1,15 @@
 # Flet imports
 import flet as ft
+from flet.ref import Ref
 
 # other imports
 from math import pi
 from typing import Optional
 from loguru import logger
+# for debugging
+from pprint import pprint
 
+## class defines
 class MenuButton(ft.Container):
 	def __init__(
 			self, title: str, icon: Optional[ft.Control] = None, selected: bool = False
@@ -85,9 +89,10 @@ class Collapsible(ft.Column):
 				]
 		)
 
+## functions defines
 @logger.catch(reraise=True)
 def main(page: ft.Page):
-	## function defines
+	## main function defines
 
 	#def check_item_clicked(e):
 		#e.control.checked = not e.control.checked
@@ -114,13 +119,25 @@ def main(page: ft.Page):
 		settings.open = True
 		page.update()
 
+	def change_layout(e):
+		current_layout.value = e.control.data
+		set_property_panel_options(e.control.data)
+		page.update()
+
+	def set_property_panel_options(options):
+		for control in property_panel.controls:
+			 property_panel.controls.pop()
+		if options == 'Canvas':
+			property_panel.controls.append(canvas_options)
+		elif options == 'Textual Inversion':
+			property_panel.controls.append(textual_inversion_options)
+		elif options == 'Node Editor':
+			property_panel.controls.append(node_editor_options)
+
+
 	## page defines
 	page.title = "Stable Diffusion Playground"
 	page.theme_mode = "dark"
-
-	## header defines
-	app_bar_title = ft.Text("Sygil", selectable=True)
-
 	settings = ft.AlertDialog(
 			#modal = True,
 			title = ft.Text("Settings"),
@@ -144,19 +161,27 @@ def main(page: ft.Page):
 			#on_dismiss=lambda e: print("Modal dialog dismissed!"),
 	)
 
-	prompt = ft.TextField(
-			#label="Prompt",
-			value="",
-			min_lines=1,
-			max_lines=1,
-			shift_enter=True,
-			#width=1000,
-			tooltip="Prompt to use for generation.",
-			#autofocus=True,
-			hint_text="A corgi wearing a top hat as an oil paiting.",
+	## header defines
+	app_bar_title = ft.Text("Sygil", size = 20, text_align = 'center')
+
+	layout = ft.PopupMenuButton(
+			items = [
+				ft.PopupMenuItem(text="Canvas", on_click=change_layout, data="Canvas"),
+				ft.PopupMenuItem(text="Textual Inversion", on_click=change_layout, data="Textual Inversion"),
+				ft.PopupMenuItem(text="Node Editor", on_click=change_layout, data="Node Editor"),
+			],
+			tooltip = "Switch between different workspaces",
 	)
 
-	generate_button = ft.ElevatedButton("Generate", on_click=None)
+	current_layout = ft.Text('Canvas', tooltip="Current Workspace")
+
+	file_options = ft.Row(
+			alignment = 'start',
+			controls = [
+				ft.Container(content = layout),
+				ft.Container(content = current_layout),
+			]
+	)
 
 	theme_switcher = ft.IconButton(
 			ft.icons.WB_SUNNY_OUTLINED,
@@ -168,7 +193,6 @@ def main(page: ft.Page):
 	settings_button = ft.IconButton(icon=ft.icons.SETTINGS, on_click=open_settings_window)
 
 	menu_button = ft.PopupMenuButton(
-			expand = 1,
 			items = [
 					#ft.PopupMenuItem(text="Settings", on_click=open_settings_modal),
 					ft.PopupMenuItem(),  # divider
@@ -189,16 +213,31 @@ def main(page: ft.Page):
 			width = page.width,
 			controls = [
 					ft.Container(width = 60, content = app_bar_title),
-					ft.VerticalDivider(width=10, color="gray"),
-					ft.Container(expand = 4, content = prompt),
-					ft.Container(expand = 1, content = generate_button),
-					ft.VerticalDivider(width=10, color="gray"),
+					ft.VerticalDivider(width = 10, color = "gray"),
+					ft.Container(expand=True, content = file_options),
+#					ft.Container(expand = 4, content = prompt),
+#					ft.Container(expand = 1, content = generate_button),
+					ft.VerticalDivider(width = 10, color = "gray"),
 					ft.Container(width = 410, content = option_bar),
 			],
 	)
 
 
 	## main panel defines
+	prompt = ft.TextField(
+			#label="Prompt",
+			value="",
+			min_lines=1,
+			max_lines=1,
+			shift_enter=True,
+			#width=1000,
+			tooltip="Prompt to use for generation.",
+			#autofocus=True,
+			hint_text="A corgi wearing a top hat as an oil paiting.",
+	)
+
+	generate_button = ft.ElevatedButton("Generate", on_click=None)
+
 
 	## left panel
 	left_panel = ft.Column(
@@ -250,7 +289,7 @@ def main(page: ft.Page):
 	)
 
 
-	## right panel
+	## properties panel
 	model_menu = ft.Dropdown(
 			label = "Custom Models",
 			options = [
@@ -284,7 +323,7 @@ def main(page: ft.Page):
 					"Try to find the best one for your needs and hardware.",
 	)
 
-	options = ft.Container(
+	canvas_options = ft.Container(
 			content = ft.Column(
 					controls = [
 							ft.Row(
@@ -323,33 +362,53 @@ def main(page: ft.Page):
 								alignment = 'spaceAround',
 							),
 							ft.Draggable(content=ft.Divider(height=10, color="gray")),
-							ft.Switch(label="Stable Horde", value=False, disabled=True, tooltip="Option disabled for now."),
-							ft.Draggable(content=ft.Divider(height=10, color="gray")),
-							ft.Switch(label="Batch Options", value=False, disabled=True, tooltip="Option disabled for now."),
-							ft.Draggable(content=ft.Divider(height=10, color="gray")),
-							ft.Switch(label="Upscaling", value=False, disabled=True, tooltip="Option disabled for now."),
-							ft.Draggable(content=ft.Divider(height=10, color="gray")),
-							ft.Switch(label="Preview Image Settings", value=False, disabled=True, tooltip="Option disabled for now."),
+#							ft.Switch(label="Stable Horde", value=False, disabled=True, tooltip="Option disabled for now."),
+#							ft.Draggable(content=ft.Divider(height=10, color="gray")),
+#							ft.Switch(label="Batch Options", value=False, disabled=True, tooltip="Option disabled for now."),
+#							ft.Draggable(content=ft.Divider(height=10, color="gray")),
+#							ft.Switch(label="Upscaling", value=False, disabled=True, tooltip="Option disabled for now."),
+#							ft.Draggable(content=ft.Divider(height=10, color="gray")),
+#							ft.Switch(label="Preview Image Settings", value=False, disabled=True, tooltip="Option disabled for now."),
+#							ft.Draggable(content=ft.Divider(height=10, color="gray")),
+					]
+			),
+			expand = True
+	)
+
+	textual_inversion_options = ft.Container(
+			content = ft.Column(
+					controls = [
 							ft.Draggable(content=ft.Divider(height=10, color="gray")),
 					]
 			),
 			expand = True
 	)
 
-	right_panel = ft.Column(
-			width=400,
+	node_editor_options = ft.Container(
+			content = ft.Column(
+					controls = [
+							ft.Draggable(content=ft.Divider(height=10, color="gray")),
+					]
+			),
+			expand = True
+	)
+
+	property_panel = ft.Column(
+			width = 400,
 			controls = [
-				options,
+				canvas_options,
 			]
 	)
 
+
+	## main panel
 	main_panel = ft.Row(
 			controls = [
 				left_panel,
 				ft.Draggable(content=ft.VerticalDivider(width=10, color="gray")),
 				canvas,
 				ft.Draggable(content=ft.VerticalDivider(width=10, color="gray")),
-				right_panel,
+				property_panel,
 			],
 			expand=True,
 	)
@@ -380,6 +439,7 @@ def main(page: ft.Page):
 
 	## add main body to page
 	page.add(main_panel)
+	page.add(ft.Draggable(content=ft.Divider(height=10, color="gray")))
 
 	## add bottom_panel to page
 	page.add(bottom_panel)
